@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 
-BASE_DIR=/home/ningxin
-DATA_DIR=${BASE_DIR}/data/multiwoz/data/MultiWOZ_2.2
-EXP_DIR=${BASE_DIR}/code/DST-as-Prompting
+THIS_DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+DATA_DIR=${THIS_DIR}/data-bin
 OUTPUT_DIR=${EXP_DIR}/outputs
 
-cd ${EXP_DIR}/transformers
-
-CUDA_VISIBLE_DEVICES=4 python3 examples/pytorch/summarization/run_summarization.py \
+CUDA_VISIBLE_DEVICES=5 python3 src/train.py \
     --model_name_or_path t5-small \
     --do_train \
     --do_predict \

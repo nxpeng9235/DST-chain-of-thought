@@ -109,9 +109,15 @@ ENV/
 # mypy
 .mypy_cache/
 
+# data-bin
+data-bin/
+
 # VSCODE
 .vscode/ftp-sync.json
 .vscode/settings.json
 
 # Weights and Biases logs
 wandb/
+
+# output
+outputs/
