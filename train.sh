@@ -16,8 +16,8 @@ CUDA_VISIBLE_DEVICES=5 python3 src/train.py \
     --output_dir "$OUTPUT_DIR/t5small_mwoz2.2" \
     --per_device_train_batch_size=16 \
     --per_device_eval_batch_size=16 \
-    --num_train_epochs=1 \
+    --num_train_epochs=3 \
     --predict_with_generate \
     --text_column="dialogue" \
-    --summary_column="state" \
+    --summary_column="result" \
     --save_steps=500000
