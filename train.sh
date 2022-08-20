@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 
-BASE_DIR=/home/ningxin
-DATA_DIR=${BASE_DIR}/data/multiwoz/data/MultiWOZ_2.2
-EXP_DIR=${BASE_DIR}/code/DST-as-Prompting
-OUTPUT_DIR=${EXP_DIR}/outputs
+THIS_DIR="$( cd "$( dirname "$0" )" && pwd )"
 
-cd ${EXP_DIR}/transformers
+DATA_DIR=${THIS_DIR}/data-bin
+OUTPUT_DIR=${THIS_DIR}/outputs
 
-CUDA_VISIBLE_DEVICES=4 python3 examples/pytorch/summarization/run_summarization.py \
+CUDA_VISIBLE_DEVICES=5 python3 src/train.py \
     --model_name_or_path t5-small \
     --do_train \
     --do_predict \
@@ -16,8 +14,9 @@ CUDA_VISIBLE_DEVICES=4 python3 examples/pytorch/summarization/run_summarization.
     --test_file "$DATA_DIR/test.json" \
     --source_prefix "" \
     --output_dir "$OUTPUT_DIR/t5small_mwoz2.2" \
-    --per_device_train_batch_size=4 \
-    --per_device_eval_batch_size=4 \
+    --per_device_train_batch_size=16 \
+    --per_device_eval_batch_size=16 \
+    --num_train_epochs=1 \
     --predict_with_generate \
     --text_column="dialogue" \
     --summary_column="state" \
