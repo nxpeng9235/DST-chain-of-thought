@@ -64,7 +64,7 @@ def main(args):
             continue
 
     if not os.path.exists(args.out_dir):
-                        os.mkdir(args.out_dir)
+        os.mkdir(args.out_dir)
 
     # Create dummy json files for evaluation
     for n in ["dialogues_001", "dialogues_002"]:

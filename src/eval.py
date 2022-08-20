@@ -350,11 +350,14 @@ def get_metrics(dataset_ref, dataset_hyp, service_schemas, in_domain_services):
 def main(args):
     
     in_domain_services = get_in_domain_services(
-        os.path.join(args.data_dir, args.eval_set, "schema.json"),
-        os.path.join(args.data_dir, "train", "schema.json"))
+        os.path.join(args.data_dir, "schema.json"),
+        os.path.join(args.data_dir, "schema.json"))
+    #     os.path.join(args.data_dir, args.eval_set, "schema.json"),
+    #     os.path.join(args.data_dir, "train", "schema.json"))
 
 
-    with open(os.path.join(args.data_dir, args.eval_set, "schema.json")) as f:
+    # with open(os.path.join(args.data_dir, args.eval_set, "schema.json")) as f:
+    with open(os.path.join(args.data_dir, "schema.json")) as f:
         eval_services = {}
         list_services = json.load(f)
         for service in list_services:
