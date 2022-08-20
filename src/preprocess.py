@@ -67,6 +67,7 @@ def preprocess(dial_json, schema, out, idx_out, excluded_domains, frame_idxs):
 def main():
     #data_path = "./MultiWOZ_2.2/"
     data_path = sys.argv[1]
+    data_bin_path = sys.argv[2]
 
     schema_path = data_path + "schema.json"
     schema = json.load(open(schema_path))
@@ -77,8 +78,8 @@ def main():
     excluded_domains = ["police", "hospital", "bus"]
     for split in ["train", "dev", "test"]:
         print("--------Preprocessing {} set---------".format(split))
-        out = open(os.path.join(data_path, "{}.json".format(split)), "w")
-        idx_out = open(os.path.join(data_path, "{}.idx".format(split)), "w")
+        out = open(os.path.join(data_bin_path, "{}.json".format(split)), "w")
+        idx_out = open(os.path.join(data_bin_path, "{}.idx".format(split)), "w")
         dial_jsons = glob(os.path.join(data_path, "{}/*json".format(split)))
         for dial_json in dial_jsons:
             if dial_json.split("/")[-1] != "schema.json":
