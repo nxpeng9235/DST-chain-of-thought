@@ -54,11 +54,16 @@ def main(args):
         val = out_lines[_idx].strip()
         # For active slots, update values in the dummy jsons
         if val != "NONE":
+            try: 
+                predicted_val = val.strip(".").split("is")[-1].strip()
+            except:
+                print(f"idx={_idx} output with invalid format, skipping...")
+                continue
             d_s_name = d_name + "-" + s_name 
             if dial_json_n == "dialogues_001.json":
-                dummy_dial_file_json_1[int(dial_idx)]["turns"][int(turn_idx)]["frames"][int(frame_idx)]["state"]["slot_values"].update({d_s_name: [val]})
+                dummy_dial_file_json_1[int(dial_idx)]["turns"][int(turn_idx)]["frames"][int(frame_idx)]["state"]["slot_values"].update({d_s_name: [predicted_val]})
             elif dial_json_n == "dialogues_002.json":
-                dummy_dial_file_json_2[int(dial_idx)]["turns"][int(turn_idx)]["frames"][int(frame_idx)]["state"]["slot_values"].update({d_s_name: [val]})
+                dummy_dial_file_json_2[int(dial_idx)]["turns"][int(turn_idx)]["frames"][int(frame_idx)]["state"]["slot_values"].update({d_s_name: [predicted_val]})
         # NONE token means the slot is non-active. Skip the updating option
         else:
             continue
