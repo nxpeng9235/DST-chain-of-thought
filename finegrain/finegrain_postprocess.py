@@ -7,28 +7,23 @@ from glob import glob
 import argparse
 from utils import get_predicted_slot_value
 
-sgd_idx_convert = {0:0, 5:1, 9:2, 13:3, 15:4, 17:5, 19:6, 22:7, 23:8, 24:9, 26:10, 29:11, 30:12, 33:13, 35:14, 37:15, 38:16, 41:17, 42:18, 43:19, 44:20}
 
 def main(args):
     if args.dataset.startswith("multiwoz") or args.dataset == "sgd":
         if args.dataset == "multiwoz2.2":
             # create dummy frame as in MultiWOZ2.2 file format
-            domains = {"train": 0, "taxi":1, "bus":2, "police":3, "hotel":4, "restaurant":5, "attraction":6, "hospital":7}
+            domains = ["train", "taxi", "bus", "police", "hotel", "restaurant", "attraction", "hospital"]
             # skip domains that are not in the testing set
             excluded_domains = ["police", "hospital", "bus"]
         elif args.dataset == "multiwoz2.0" or args.dataset == "multiwoz2.1":
             # create dummy frame as in MultiWOZ2.2 file format
-            domains = {"hotel": 0, "train": 1, "attraction": 2, "restaurant": 3, "taxi": 4, "bus": 5, "hospital": 6}
+            domains = ["hotel", "train", "attraction", "restaurant", "taxi", "bus", "hospital"]
             # skip domains that are not in the testing set
             excluded_domains = ["hospital", "bus"]
         elif args.dataset == "sgd":
-            domains = {
-                        'Alarm_1': 0, 'Buses_3': 5, 'Events_3': 9, 'Flights_4': 13, 'Homes_2': 15, 
-                        'Hotels_2': 17, 'Hotels_4': 19, 'Media_3': 22, 'Messaging_1': 23, 'Movies_1': 24,
-                        'Movies_3': 26, 'Music_3': 29, 'Payment_1': 30, 'RentalCars_3': 33, 'Restaurants_2': 35,
-                        'RideSharing_2': 37, 'Services_1': 38, 'Services_4': 41, 
-                        'Trains_1': 42, 'Travel_1': 43, 'Weather_1': 44
-                    }
+            domains = ['Alarm_1', 'Buses_3', 'Events_3', 'Flights_4', 'Homes_2', 'Hotels_2', 'Hotels_4', 'Media_3',
+                       'Messaging_1', 'Movies_1', 'Movies_3', 'Music_3', 'Payment_1', 'RentalCars_3', 'Restaurants_2',
+                       'RideSharing_2', 'Services_1', 'Services_4', 'Trains_1', 'Travel_1', 'Weather_1']
             # skip domains that are not in the testing set
             excluded_domains = []
         else:
@@ -36,7 +31,7 @@ def main(args):
             exit(-998)
 
         dummy_frames = []
-        for domain, d_id in domains.items():
+        for domain in domains:
             # if domain in excluded_domains:
             #     continue
             dummy_frames.append({"service": domain, "state": {"slot_values": {}}})
@@ -55,11 +50,8 @@ def main(args):
                 dial_id = dial_json["dialogue_id"]
                 dummy_dial_json = {"dialogue_id": dial_id, "turns":[]}
 
-                for turn_idx, turn in enumerate(dial_json["turns"]):
-                    try:
-                        turn_id = turn["turn_id"]
-                    except KeyError:
-                        turn_id = turn_idx
+                for turn in dial_json["turns"]:
+                    turn_id = turn["turn_id"]
                     if turn["speaker"] == "USER":
                         dummy_dial_json["turns"].append({"turn_id": turn_id, "speaker": "USER", "frames": copy.deepcopy(dummy_frames)})
                     else:
@@ -87,8 +79,7 @@ def main(args):
                     print(f"idx={_idx} output with invalid format, skipping...")
                     continue
                 d_s_name = d_name + "-" + s_name
-                if args.dataset == "sgd":
-                    frame_idx = sgd_idx_convert[int(frame_idx)]
+
                 dummy_dial_file_jsons[dial_json_n][int(dial_idx)]["turns"][int(turn_idx)]["frames"][int(frame_idx)]["state"]["slot_values"].update({d_s_name: [predicted_val]})
             # NONE token means the slot is non-active. Skip the updating option
             else:
@@ -180,3 +171,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     main(args)
+ 

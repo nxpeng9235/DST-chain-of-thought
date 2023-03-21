@@ -5,9 +5,13 @@ THIS_DIR="$( cd "$( dirname "$0" )" && pwd )"
 BASE_DIR=/home/ningxin
 DATA_DIR=${BASE_DIR}/data/multiwoz/data/MultiWOZ_2.2
 DATA_BIN_DIR=${THIS_DIR}/data-bin
-OUTPUT_DIR=${THIS_DIR}/outputs/t5small_mwoz2.2
+OUTPUT_DIR=$1
 
-CUDA_VISIBLE_DEVICES=5
+if [[ ! ${OUTPUT_DIR} ]]; then
+    OUTPUT_DIR=${THIS_DIR}/outputs
+fi
+
+CUDA_VISIBLE_DEVICES=4
 
 python src/postprocess.py --data_dir "$DATA_DIR" --out_dir "$OUTPUT_DIR/dummy/" --test_idx "$DATA_BIN_DIR/test.idx" \
     --prediction_txt "$OUTPUT_DIR/generated_predictions.txt"

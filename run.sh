@@ -4,6 +4,10 @@ THIS_DIR="$( cd "$( dirname "$0" )" && pwd )"
 
 TIME=`date +%Y%m%d%H%M%S`
 
+ALL_ARGS="$@"
+
+TRAINING_ARGS=""
+
 until [[ -z "$1" ]]
 do
     case $1 in
@@ -16,6 +20,18 @@ do
         --data-bin)
             shift; HDFS_DATA_BIN=$1;
             shift;;
+        --output)
+            shift; HDFS_OUTPUT=$1;
+            shift;;
+        --model_name_or_path)
+            shift; MODEL_NAME_OR_PATH=$1;
+            shift;;
+        --nproc_per_node)
+            shift; NPROC_PER_NODE=$1;
+            shift;;
+        *)
+            TRAINING_ARGS="${TRAINING_ARGS} $1";
+            shift;
     esac
 done
 
@@ -27,6 +43,12 @@ fi
 if [[ ! ${DATASET} ]]; then
     DATASET="multiwoz2.2"
 fi
+
+if [[ ! ${HDFS_OUTPUT} ]]; then
+    HDFS_OUTPUT=${THIS_DIR}/results/$DATASET-$TIME
+fi
+mkdir -p ${HDFS_OUTPUT}/
+echo "bash run.sh ${ALL_ARGS}" > ${HDFS_OUTPUT}/input.sh
 
 mkdir -p ${THIS_DIR}/data/
 if [[ ${DATASET} == "multiwoz2.2" ]]; then
@@ -74,3 +96,26 @@ else
     cp -r ${HDFS_DATA_BIN}/ ${DATA_BIN_DIR}
 fi
 
+echo "Doing Training..."
+
+OUTPUT_DIR=${THIS_DIR}/outputs-$TIME
+
+if [[ ! ${NPROC_PER_NODE} ]]; then
+    PYTHON_COMMAND="python3"
+else
+    PORT_NUM=`date +%M%S`
+    PYTHON_COMMAND="python3 -m torch.distributed.launch --nproc_per_node ${NPROC_PER_NODE} --master_port ${PORT_NUM}"
+fi
+
+${PYTHON_COMMAND} \
+    src/train.py \
+    --train_file "$DATA_BIN_DIR/train.json" \
+    --validation_file "$DATA_BIN_DIR/dev.json" \
+    --test_file "$DATA_BIN_DIR/test.json" \
+    --model_name_or_path ${MODEL_NAME_OR_PATH} \
+    --output_dir $OUTPUT_DIR ${TRAINING_ARGS} || exit -200
+
+echo "Finish! Uploading everything to ${HDFS_OUTPUT}"
+
+mv ${DATA_BIN_DIR} ${HDFS_OUTPUT}/data-bin
+mv ${OUTPUT_DIR} ${HDFS_OUTPUT}/outputs
