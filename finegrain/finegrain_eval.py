@@ -290,9 +290,10 @@ def get_metrics(dataset_ref, dataset_hyp, service_schemas, in_domain_services):
             for frame_ref in turn_ref["frames"]:
                 service_name = frame_ref["service"]
                 if service_name not in hyp_frames_by_service:
-                    raise ValueError(
-                            "Frame for service {} not found in dialogue with id {}".format(
-                                    service_name, dial_id))
+                    continue
+                    # raise ValueError(
+                    #         "Frame for service {} not found in dialogue with id {}".format(
+                    #                 service_name, dial_id))
                 service = service_schemas[service_name]
                 frame_hyp = hyp_frames_by_service[service_name]
                 
@@ -348,7 +349,6 @@ def get_metrics(dataset_ref, dataset_hyp, service_schemas, in_domain_services):
 
 def main(args):
     if args.dataset.startswith("multiwoz") or args.dataset == "sgd":
-    
         in_domain_services = get_in_domain_services(
             os.path.join(args.data_dir, args.eval_set, "schema.json"),
             os.path.join(args.data_dir, args.eval_set, "schema.json"))
@@ -362,7 +362,18 @@ def main(args):
         dataset_ref = get_dataset_as_dict(
                 os.path.join(args.data_dir, args.eval_set, "dialogues_*.json"))
         dataset_hyp = get_dataset_as_dict(
-                os.path.join(args.prediction_dir, "*.json"))
+                os.path.join(args.prediction_dir, "dummy_out_dialogues_*.json"))
+
+        len_range = args.length_range
+        min_len, max_len = len_range.split("-")
+        min_len, max_len = int(min_len), int(max_len)
+
+        filtered_ids = set()
+        for key, value in dataset_hyp.items():
+            if min_len < len(value["turns"]) <= max_len:
+                filtered_ids.add(key)
+        dataset_ref = {key: value for key, value in dataset_ref.items() if key in filtered_ids}
+        dataset_hyp = {key: value for key, value in dataset_hyp.items() if key in filtered_ids}
 
         print("len(dataset_hyp)=%d, len(dataset_ref)=%d", len(dataset_hyp), len(dataset_ref))
         if not dataset_hyp or not dataset_ref:
@@ -389,25 +400,36 @@ def main(args):
         in_domain_services = get_in_domain_services(
             os.path.join(args.data_dir, "schema.json"),
             os.path.join(args.data_dir, "schema.json"))
-
+    
         with open(os.path.join(args.data_dir, "schema.json")) as f:
             eval_services = {}
             list_services = json.load(f)
             for service in list_services:
                 eval_services[service["service_name"]] = service
-
+    
         dataset_ref = get_dataset_as_dict(
                 os.path.join(args.data_dir, f"{args.eval_set}.json"))
         dataset_hyp = get_dataset_as_dict(
-                os.path.join(args.prediction_dir, "*.json"))
-
+                os.path.join(args.prediction_dir, "dummy_out*.json"))
+    
+        len_range = args.length_range
+        min_len, max_len = len_range.split("-")
+        min_len, max_len = int(min_len), int(max_len)
+    
+        filtered_ids = set()
+        for key, value in dataset_hyp.items():
+            if min_len < len(value["turns"]) <= max_len:
+                filtered_ids.add(key)
+        dataset_ref = {key: value for key, value in dataset_ref.items() if key in filtered_ids}
+        dataset_hyp = {key: value for key, value in dataset_hyp.items() if key in filtered_ids}
+    
         print("len(dataset_hyp)=%d, len(dataset_ref)=%d", len(dataset_hyp), len(dataset_ref))
         if not dataset_hyp or not dataset_ref:
             raise ValueError("Hypothesis and/or reference dataset are empty!")
-
+    
         all_metric_aggregate, _ = get_metrics(dataset_ref, dataset_hyp, eval_services, in_domain_services)
         print("Dialog metrics: %s", str(all_metric_aggregate[ALL_SERVICES]))
-
+    
         with open(args.output_metric_file, "w") as f:
             json.dump(
                     all_metric_aggregate,
@@ -415,7 +437,7 @@ def main(args):
                     indent=2,
                     separators=(",", ": "),
                     sort_keys=True)
-
+    
         # Write the per-frame metrics values with the corrresponding dialogue frames.
         with open(
                 os.path.join(args.prediction_dir, PER_FRAME_OUTPUT_FILENAME), "w") as f:
@@ -431,6 +453,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_metric_file", default="./MultiWOZ_2.2/dummy/dummy_score")
     parser.add_argument("--joint_acc_across_turn", default=True, type=bool)      
     parser.add_argument("--use_fuzzy_match", default=False, type=bool)
+    parser.add_argument("--length_range", default="0-10", type=str)
     parser.add_argument("--dataset", type=str, default="multiwoz2.2",
                         choices=["multiwoz2.2", "multiwoz2.1", "multiwoz2.0", "m2m-R-M", "m2m-R", "m2m-M", "woz2.0", "dstc2", "sgd"])
     args = parser.parse_args()

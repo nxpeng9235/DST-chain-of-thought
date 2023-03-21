@@ -120,4 +120,6 @@ data-bin/
 wandb/
 
 # output
-outputs/
+data/
+results/
+t5-base/

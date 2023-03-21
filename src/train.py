@@ -20,6 +20,7 @@ Fine-tuning the library models for sequence to sequence.
 
 import logging
 import os
+import random
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
@@ -27,7 +28,8 @@ from typing import Optional
 import datasets
 import nltk  # Here to have a nice missing dependency error message early on
 import numpy as np
-from datasets import load_dataset, load_metric
+import torch
+from datasets import load_dataset, load_metric, concatenate_datasets
 
 import transformers
 from filelock import FileLock
@@ -70,6 +72,18 @@ except (LookupError, OSError):
 
 # A list of all multilingual tokenizer which require lang attribute.
 MULTILINGUAL_TOKENIZERS = [MBartTokenizer, MBartTokenizerFast, MBart50Tokenizer, MBart50TokenizerFast]
+
+
+def setup_seed(seed):
+    """
+    Helper function for reproducible behavior to set the seed in `random`, `numpy`, `torch` and/or `tf` (if installed).
+
+    Args:
+        seed (`int`): The seed to set.
+    """
+    set_seed(seed)
+    if torch.cuda.is_available():
+        torch.backends.cudnn.deterministic = True
 
 
 @dataclass
@@ -328,7 +342,7 @@ def main():
             )
 
     # Set seed before initializing model.
-    set_seed(training_args.seed)
+    setup_seed(training_args.seed)
 
     # Get the datasets: you can either provide your own CSV/JSON training and evaluation files (see below)
     # or just provide the name of one of the public datasets available on the hub at https://huggingface.co/datasets/
@@ -502,21 +516,28 @@ def main():
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
+
     if training_args.do_train:
         if "train" not in raw_datasets:
             raise ValueError("--do_train requires a train dataset")
         train_dataset = raw_datasets["train"]
         if data_args.max_train_samples is not None:
             train_dataset = train_dataset.select(range(data_args.max_train_samples))
-        with training_args.main_process_first(desc="train dataset map pre-processing"):
-            train_dataset = train_dataset.map(
-                preprocess_function,
-                batched=True,
-                num_proc=data_args.preprocessing_num_workers,
-                remove_columns=column_names,
-                load_from_cache_file=not data_args.overwrite_cache,
-                desc="Running tokenizer on train dataset",
-            )
+        train_dataset_all_subsets = []
+        subset_size = (len(train_dataset) // 4)+ 1
+        for i in range(0, 4):
+            train_subset = train_dataset.select(range(i * subset_size, min((i + 1) * subset_size, len(train_dataset))))
+            with training_args.main_process_first(desc="train dataset map pre-processing"):
+                train_subset = train_subset.map(
+                    preprocess_function,
+                    batched=True,
+                    num_proc=data_args.preprocessing_num_workers,
+                    remove_columns=column_names,
+                    load_from_cache_file=not data_args.overwrite_cache,
+                    desc=f"Running tokenizer on train dataset - subset {i+1}/4",
+                )
+            train_dataset_all_subsets.append(train_subset)
+        train_dataset = concatenate_datasets(train_dataset_all_subsets)
 
     if training_args.do_eval:
         max_target_length = data_args.val_max_target_length
